@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 pub struct Post {
     state: Option<Box<dyn State>>,
     content: String,
@@ -51,7 +53,9 @@ struct Draft {}
 
 impl State for Draft {
     fn request_review(self: Box<Self>) -> Box<dyn State> {
-        Box::new(PendingReview {})
+        Box::new(PendingReview {
+            approval_count: Cell::new(0),
+        })
     }
 
     fn approve(self: Box<Self>) -> Box<dyn State> {
@@ -63,7 +67,9 @@ impl State for Draft {
     }
 }
 
-struct PendingReview {}
+struct PendingReview {
+    approval_count: Cell<usize>,
+}
 
 impl State for PendingReview {
     fn request_review(self: Box<Self>) -> Box<dyn State> {
@@ -71,7 +77,13 @@ impl State for PendingReview {
     }
 
     fn approve(self: Box<Self>) -> Box<dyn State> {
-        Box::new(Published {})
+        match self.approval_count.get() {
+            0 => {
+                self.approval_count.set(1);
+                self
+            }
+            _ => Box::new(Published {}),
+        }
     }
 
     fn reject(self: Box<Self>) -> Box<dyn State> {
