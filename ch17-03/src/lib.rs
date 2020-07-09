@@ -1,12 +1,14 @@
 use std::cell::Cell;
 
 macro_rules! proxy_to_state {
-    ($func_name:ident) => {
-        pub fn $func_name(&mut self) {
-            if let Some(s) = self.state.take() {
-                self.state = Some(s.$func_name())
+    ($($func_name:ident),+) => {
+        $(
+            pub fn $func_name(&mut self) {
+                if let Some(s) = self.state.take() {
+                    self.state = Some(s.$func_name())
+                }
             }
-        }
+         )+
     };
 }
 
@@ -36,9 +38,7 @@ impl Post {
         self.state.as_ref().unwrap().content(self)
     }
 
-    proxy_to_state!(request_review);
-    proxy_to_state!(approve);
-    proxy_to_state!(reject);
+    proxy_to_state!(request_review, approve, reject);
 }
 
 trait State {
