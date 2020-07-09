@@ -1,5 +1,15 @@
 use std::cell::Cell;
 
+macro_rules! proxy_to_state {
+    ($func_name:ident) => {
+        pub fn $func_name(&mut self) {
+            if let Some(s) = self.state.take() {
+                self.state = Some(s.$func_name())
+            }
+        }
+    };
+}
+
 pub struct Post {
     state: Option<Box<dyn State>>,
     content: String,
@@ -26,23 +36,9 @@ impl Post {
         self.state.as_ref().unwrap().content(self)
     }
 
-    pub fn request_review(&mut self) {
-        if let Some(s) = self.state.take() {
-            self.state = Some(s.request_review())
-        }
-    }
-
-    pub fn approve(&mut self) {
-        if let Some(s) = self.state.take() {
-            self.state = Some(s.approve())
-        }
-    }
-
-    pub fn reject(&mut self) {
-        if let Some(s) = self.state.take() {
-            self.state = Some(s.reject())
-        }
-    }
+    proxy_to_state!(request_review);
+    proxy_to_state!(approve);
+    proxy_to_state!(reject);
 }
 
 trait State {
